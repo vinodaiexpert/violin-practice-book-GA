@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Living Violin Book — Complete Interactive App (Books 1 & 2 + Play-Along)</title>
+<style>
+  :root {
+    --bg-dark: #12100e;
+    --panel-dark: #1e1916;
+    --panel-border: #382f28;
+    --page-left: #faf5ea;
+    --page-right: #fffdf9;
+    --amber: #d97706;
+    --amber-light: #fef3c7;
+    --amber-bright: #f59e0b;
+    --emerald: #059669;
+    --emerald-bright: #10b981;
+    --purple: #6d28d9;
+    --rose: #e11d48;
+    --text-main: #292524;
+    --text-muted: #78716c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-main);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+    user-select: none;
+  }
+
+  /* TOP NAVIGATION BAR */
+  .top-bar {
+    max-width: 1440px; width: 100%; margin: 0 auto;
+    background: var(--panel-dark); color: #fff;
+    border: 1px solid var(--panel-border); border-radius: 10px 10px 0 0;
+    padding: 8px 14px; display: flex; flex-wrap: wrap;
+    align-items: center; justify-content: space-between; gap: 8px;
+  }
+  .brand h1 { font-size: 15.5px; color: var(--amber-bright); font-weight: 800; }
+  .brand p { font-size: 10.5px; color: #a8a29e; }
+  .phase-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+  .phase-btn {
+    background: #2b241f; color: #d6d3d1; border: 1px solid #443b34;
+    padding: 5px 9px; border-radius: 6px; font-size: 10.5px; font-weight: 700; cursor: pointer; transition: 0.15s;
+  }
+  .phase-btn:hover { background: #3a312a; }
+  .phase-btn.active { background: var(--amber-bright); color: #14110f; border-color: var(--amber-bright); }
+
+  /* WEEK SELECTOR BAR */
+  .week-bar {
+    max-width: 1440px; width: 100%; margin: 0 auto;
+    background: #27211c; border-left: 1px solid var(--panel-border); border-right: 1px solid var(--panel-border);
+    padding: 6px 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;
+  }
+  .week-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+  .week-btn {
+    background: #181411; color: #e7e5e4; border: 1px solid #443b34;
+    padding: 4px 10px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer;
+  }
+  .week-btn.active { background: #fffbeb; color: #92400e; border-color: var(--amber-bright); }
+
+  /* OPEN BOOK SPREAD */
+  .book-container {
+    max-width: 1440px; width: 100%; margin: 0 auto; flex: 1;
+    display: grid; grid-template-columns: 1fr 1fr;
+    background: var(--page-left); border: 4px solid #382f28; border-radius: 0 0 10px 10px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.85); position: relative; overflow: hidden;
+  }
+  @media (max-width: 980px) { .book-container { grid-template-columns: 1fr; } .spine { display: none; } }
+  .spine {
+    position: absolute; top: 0; bottom: 0; left: 50%; width: 24px; transform: translateX(-50%);
+    background: linear-gradient(90deg, rgba(0,0,0,0.02), rgba(0,0,0,0.18) 48%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.15) 52%, rgba(0,0,0,0.02));
+    pointer-events: none; z-index: 10;
+  }
+  .page-left { padding: 16px 20px; background: var(--page-left); border-right: 1px solid #e7e0d2; display: flex; flex-direction: column; justify-content: space-between; }
+  .page-right { padding: 16px 20px; background: var(--page-right); display: flex; flex-direction: column; justify-content: space-between; }
+  .page-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e5dccb; padding-bottom: 6px; margin-bottom: 8px; flex-wrap: wrap; gap: 6px; }
+  .badge { background: var(--amber-light); color: #92400e; font-size: 10.5px; font-weight: 800; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; }
+  .pos-badge { background: #ede9fe; color: #5b21b6; font-size: 10.5px; font-weight: 800; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; border: 1px solid #ddd6fe; }
+  .serif-title { font-family: Georgia, serif; font-size: 21px; font-weight: 700; color: #1c1917; margin-bottom: 5px; }
+  .goal-box { background: #fffbeb; border-left: 4px solid var(--amber); padding: 7px 11px; border-radius: 0 6px 6px 0; margin-bottom: 8px; font-size: 12px; line-height: 1.38; }
+  .goal-box strong { color: #92400e; display: block; font-size: 10px; text-transform: uppercase; margin-bottom: 2px; }
+
+  .section-label { font-size: 10.5px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; display: flex; justify-content: space-between; }
+  .checklist { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+  .check-item { display: flex; align-items: flex-start; gap: 7px; background: #fff; border: 1px solid #e5dccb; padding: 5px 9px; border-radius: 6px; font-size: 11.5px; cursor: pointer; }
+  .check-item input { margin-top: 2px; accent-color: var(--amber); width: 14px; height: 14px; }
+  .check-item.done span { text-decoration: line-through; color: #a8a29e; }
+
+  /* INTERACTIVE LAB TABS */
+  .lab-box { background: #f3ede0; border: 1px solid #dcd3c0; border-radius: 8px; padding: 9px 11px; margin-bottom: 8px; }
+  .lab-tabs { display: flex; gap: 4px; margin-bottom: 7px; flex-wrap: wrap; }
+  .lab-tab { background: #e6decb; color: #44403c; border: none; padding: 4px 8px; border-radius: 5px; font-size: 10.5px; font-weight: 700; cursor: pointer; }
+  .lab-tab.active { background: #78350f; color: #fff; }
+
+  .btn { border: none; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: 0.12s; }
+  .btn:active { transform: scale(0.97); }
+  .btn-amber { background: var(--amber); color: #fff; }
+  .btn-emerald { background: var(--emerald); color: #fff; }
+  .btn-purple { background: var(--purple); color: #fff; }
+  .btn-rose { background: var(--rose); color: #fff; }
+  .btn-dark { background: #292524; color: #fff; }
+  .btn-outline { background: #fff; color: #292524; border: 1px solid #d6d3d1; }
+  .btn-outline.active { background: var(--amber-bright); color: #14110f; border-color: #92400e; }
+
+  .homework-box { background: #26211d; color: #fef3c7; padding: 8px 11px; border-radius: 7px; font-size: 11.5px; line-height: 1.35; }
+  .homework-box strong { color: var(--amber-bright); text-transform: uppercase; font-size: 9.5px; display: block; margin-bottom: 2px; }
+
+  /* RIGHT PAGE: MP3 BINDER BAR + SHEET MUSIC + FINGERBOARD */
+  .ex-tabs { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+  .ex-tab { background: #e7e5e4; color: #44403c; border: none; padding: 4px 9px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; }
+  .ex-tab.active { background: #92400e; color: #fff; }
+
+  .mp3-bar {
+    background: #f5efe2; border: 1px solid #dfd5c0; border-radius: 8px;
+    padding: 6px 10px; margin-bottom: 7px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;
+  }
+  .speed-pill {
+    background: #fff; color: #292524; border: 1px solid #d6d3d1;
+    padding: 3px 8px; border-radius: 99px; font-size: 10.5px; font-weight: 700; cursor: pointer;
+  }
+  .speed-pill.active { background: #9a5b13; color: #fff; border-color: #9a5b13; }
+
+  .score-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; background: #f5f2eb; border: 1px solid #e5dec9; padding: 6px 9px; border-radius: 7px; margin-bottom: 7px; }
+  .coach-banner { background: #1c1815; color: #fff; border-radius: 7px; padding: 6px 10px; margin-bottom: 7px; font-size: 11px; border-left: 4px solid var(--amber-bright); }
+  .score-card { background: #fff; border: 2px solid #e7e0d2; border-radius: 8px; padding: 7px 9px; margin-bottom: 8px; overflow-x: auto; }
+  .bow-coach-bar { display: flex; align-items: center; gap: 8px; margin-top: 5px; padding-top: 5px; border-top: 1px solid #f0ece1; font-size: 11px; }
+  .bow-track { flex: 1; height: 8px; background: #e7e5e4; border-radius: 99px; overflow: hidden; }
+  .bow-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #d97706, #f59e0b); transition: width 0.12s linear; }
+
+  /* 6-POSITION FINGERBOARD */
+  .fb-card { background: #1c1815; color: #fff; padding: 8px 11px; border-radius: 8px; border: 1px solid #3a312a; }
+  .pos-switch-btn { background: #2c2520; color: #d6d3d1; border: 1px solid #443b34; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; cursor: pointer; }
+  .pos-switch-btn.active { background: var(--amber-bright); color: #14110f; border-color: #fff; }
+  .fb-grid { background: #2b1d14; border-left: 6px solid #a8a29e; border-radius: 5px; padding: 5px; margin-top: 5px; }
+  .fb-header { display: grid; grid-template-columns: 30px repeat(5, 1fr); font-size: 9px; color: #fcd34d; text-align: center; padding-bottom: 3px; border-bottom: 1px solid #443b34; margin-bottom: 4px; font-family: monospace; }
+  .fb-row { display: grid; grid-template-columns: 30px repeat(5, 1fr); gap: 4px; align-items: center; margin-bottom: 3px; }
+  .fb-string-name { font-weight: 800; font-size: 11px; color: var(--amber-bright); text-align: center; }
+  .fb-note-btn { background: #29231e; color: #e7e5e4; border: 1px solid #574c43; border-radius: 4px; padding: 3.5px 2px; font-size: 9.5px; font-family: monospace; cursor: pointer; text-align: center; }
+  .fb-note-btn:hover { background: #78350f; color: #fff; }
+  .fb-note-btn.active { background: var(--amber-bright) !important; color: #14110f !important; font-weight: 800; border-color: #fff; box-shadow: 0 0 8px var(--amber-bright); }
+
+  /* BOTTOM DOCK */
+  .studio-dock { max-width: 1440px; width: 100%; margin: 6px auto 0; background: var(--panel-dark); color: #fff; border: 1px solid var(--panel-border); border-radius: 9px; padding: 8px 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 10px; }
+  .dock-module { background: #161310; border: 1px solid #332b24; border-radius: 7px; padding: 7px 10px; display: flex; flex-direction: column; justify-content: space-between; gap: 5px; }
+  .dock-title { font-size: 9.5px; font-weight: 800; text-transform: uppercase; color: var(--amber-bright); display: flex; justify-content: space-between; align-items: center; }
+  .beat-dots { display: flex; gap: 5px; align-items: center; }
+  .beat-dot { width: 13px; height: 13px; border-radius: 50%; background: #332b24; border: 2px solid #443b34; }
+  .beat-dot.downbeat { background: var(--amber-bright); transform: scale(1.2); border-color: #fff; }
+  .beat-dot.subbeat { background: var(--emerald-bright); transform: scale(1.1); }
+  .tuner-meter { position: relative; height: 16px; background: linear-gradient(90deg, #e11d48 0%, #f59e0b 35%, #10b981 50%, #f59e0b 65%, #e11d48 100%); border-radius: 4px; overflow: hidden; border: 1px solid #443b34; }
+  .tuner-center-mark { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #fff; }
+  .tuner-needle { position: absolute; top: 1px; bottom: 1px; left: 50%; width: 5px; margin-left: -2.5px; background: #14110f; border: 1.5px solid #fff; border-radius: 2px; transition: left 0.1s; }
+  .drone-btn { background: #29231e; color: #d6d3d1; border: 1px solid #443b34; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-family: monospace; font-weight: 700; cursor: pointer; }
+  .drone-btn.active { background: var(--amber-bright); color: #14110f; border-color: #fff; }
+  .note-svg-head { cursor: pointer; }
+  .note-active-svg { fill: var(--amber) !important; stroke: var(--amber) !important; }
+  select.dark-select { background:#29231e; color:#fff; border:1px solid #443b34; border-radius:4px; font-size:10px; padding:2px 5px; font-weight:600; cursor:pointer; }
+  select.light-select { background:#fff; color:#292524; border:1px solid #d6d3d1; border-radius:5px; font-size:10.5px; padding:3px 6px; font-weight:700; cursor:pointer; }
+</style>
+</head>
+<body>
+
+  <!-- TOP MASTER HEADER -->
+  <header class="top-bar">
+    <div class="brand">
+      <h1>🎻 The Living Violin Book — Complete Studio (Books 1 & 2 · Weeks 1–48)</h1>
+      <p>Interactive Sheet Music · ½, 1st, 2nd, 3rd, 4th & 5th Positions · 24 Major/Minor Scales · Play-Along Audio</p>
+    </div>
+    <div class="phase-tabs" id="phase-tabs">
+      <button type="button" class="phase-btn active" onclick="selectPhase(0)">B1 P1: Foundations (W1–6)</button>
+      <button type="button" class="phase-btn" onclick="selectPhase(1)">B1 P2: Songs (W7–12)</button>
+      <button type="button" class="phase-btn" onclick="selectPhase(2)">B1 P3: Skills (W13–18)</button>
+      <button type="button" class="phase-btn" onclick="selectPhase(3)">B1 P4: Minuets (W19–24)</button>
+      <button type="button" class="phase-btn" onclick="selectPhase(4)">B2 P5: Positions & Vibrato (W25–37)</button>
+      <button type="button" class="phase-btn" onclick="selectPhase(5)">B2 P6: Scales & Double Stops (W38–48)</button>
+    </div>
+  </header>
+
+  <!-- WEEK SELECTOR BAR -->
+  <nav class="week-bar">
+    <div class="week-tabs" id="week-tabs">
+      <button type="button" class="week-btn active" onclick="selectWeek(0)">W1</button>
+      <button type="button" class="week-btn" onclick="selectWeek(1)">W2</button>
+      <button type="button" class="week-btn" onclick="selectWeek(2)">W3</button>
+      <button type="button" class="week-btn" onclick="selectWeek(3)">W4</button>
+      <button type="button" class="week-btn" onclick="selectWeek(4)">W5</button>
+      <button type="button" class="week-btn" onclick="selectWeek(5)">W6</button>
+    </div>
+    <div style="font-size: 11px; color: #fcd34d; font-weight: 700;" id="phase-goal-banner">
+      Book 1 Phase 1 (W1–6): Hold violin/bow without tension, bow straight on 4 open strings & play fingers 1–3 on A and E
+    </div>
+  </nav>
+
+  <!-- MAIN OPEN BOOK SPREAD -->
+  <main class="book-container">
+    <div class="spine"></div>
+
+    <!-- LEFT PAGE: LESSON GUIDE, CHECKLIST & INTERACTIVE LABS -->
+    <section class="page-left">
+      <div>
+        <div class="page-header">
+          <span class="badge" id="week-badge">Week 1 · Book 1</span>
+          <span class="pos-badge" id="week-pos-badge">1st Position</span>
+        </div>
+
+        <h2 class="serif-title" id="week-title">The Instrument and Posture</h2>
+
+        <div class="goal-box">
+          <strong>Week Goal & Practice Focus</strong>
+          <span id="week-goal">Name the parts, stand in rest and playing position, hold the violin for 30 seconds.</span>
+        </div>
+
+        <div class="section-label">
+          <span>Weekly Step-by-Step Drills (Tap to Check Off)</span>
+          <span id="check-counter" style="color: var(--amber);">0/4 Done</span>
+        </div>
+        <div class="checklist" id="checklist-box">
+          <label class="check-item"><input type="checkbox" onchange="updateCheckCount()"><span>Parts quiz: scroll, pegs, fine tuners, fingerboard, bridge, f-holes, chinrest, tailpiece; bow tip, stick, hair, frog, screw</span></label>
+          <label class="check-item"><input type="checkbox" onchange="updateCheckCount()"><span>Feet chart: left foot slightly forward, weight balanced (Hold 10s, repeat 5×)</span></label>
+          <label class="check-item"><input type="checkbox" onchange="updateCheckCount()"><span>Violin lift: from rest position to shoulder, chin on chinrest, left hand free (Count to 10, 3×)</span></label>
+          <label class="check-item"><input type="checkbox" onchange="updateCheckCount()"><span>Pizzicato on open A and E, 4 plucks each, saying the string name aloud</span></label>
+        </div>
+
+        <!-- 5-TAB INTERACTIVE PRACTICE LAB -->
+        <div class="lab-box">
+          <div class="lab-tabs">
+            <button type="button" class="lab-tab active" id="ltab-pos" onclick="switchLab('pos')">📐 Positions & Shifting</button>
+            <button type="button" class="lab-tab" id="ltab-scale" onclick="switchLab('scale')">🎼 All 24 Scales & Pieces</button>
+            <button type="button" class="lab-tab" id="ltab-rhythm" onclick="switchLab('rhythm')">👏 Clap Beat Pad</button>
+            <button type="button" class="lab-tab" id="ltab-strokes" onclick="switchLab('strokes')">🎻 Vibrato & Strokes</button>
+            <button type="button" class="lab-tab" id="ltab-parts" onclick="switchLab('parts')">🎯 Parts Quiz</button>
+          </div>
+
+          <!-- Lab 1: Positions & Shifting Guide -->
+          <div id="lab-pos">
+            <p style="font-size: 11px; color: #292524; margin-bottom: 6px; line-height: 1.35;" id="pos-guide-text">
+              <strong>1st Position (G=A, D=E, A=B, E=F♯/F):</strong> Left thumb rests lightly opposite 1st/2nd finger. Keep a relaxed space under the neck.
+            </p>
+            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+              <button type="button" class="btn btn-outline" id="lpos-0" onclick="setFingerboardPosition(0)">½ Pos</button>
+              <button type="button" class="btn btn-outline active" id="lpos-1" onclick="setFingerboardPosition(1)">1st Pos</button>
+              <button type="button" class="btn btn-outline" id="lpos-2" onclick="setFingerboardPosition(2)">2nd Pos</button>
+              <button type="button" class="btn btn-outline" id="lpos-3" onclick="setFingerboardPosition(3)">3rd Pos</button>
+              <button type="button" class="btn btn-outline" id="lpos-4" onclick="setFingerboardPosition(4)">4th Pos</button>
+              <button type="button" class="btn btn-outline" id="lpos-5" onclick="setFingerboardPosition(5)">5th Pos</button>
+              <button type="button" class="btn btn-purple" onclick="playShiftDrill()">🔊 Hear 1st→3rd→5th Shift</button>
+            </div>
+          </div>
+
+          <!-- Lab 2: Book 1 & 2 Repertoire + 24 Scales Library -->
+          <div id="lab-scale" style="display: none;">
+            <p style="font-size: 10.5px; color: #57534e; margin-bottom: 5px;">Load any Book 1/2 Piece or 2-Octave Scale onto the music stand & MP3 player:</p>
+            <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+              <select id="scale-key-sel" class="light-select" onchange="loadLibraryItem(this.value)">
+                <option value="">🎼 Choose Scale (All 24 Keys)...</option>
+                <optgroup label="Major Scales (2 Octaves, ♩=80)">
+                  <option value="SC_C_MAJ">C Major (3rd Pos)</option>
+                  <option value="SC_G_MAJ">G Major (1st Pos)</option>
+                  <option value="SC_D_MAJ">D Major (3rd Pos)</option>
+                  <option value="SC_A_MAJ">A Major (1st Pos)</option>
+                  <option value="SC_E_MAJ">E Major (1st & 5th Pos)</option>
+                  <option value="SC_B_MAJ">B Major (1st Pos)</option>
+                  <option value="SC_FS_MAJ">F♯ Major (3rd & 5th Pos)</option>
+                  <option value="SC_DB_MAJ">D♭ Major (3rd Pos)</option>
+                  <option value="SC_AB_MAJ">A♭ Major (1st Pos)</option>
+                  <option value="SC_EB_MAJ">E♭ Major (1st & 5th Pos)</option>
+                  <option value="SC_BB_MAJ">B♭ Major (1st Pos)</option>
+                  <option value="SC_F_MAJ">F Major (1st & 5th Pos)</option>
+                </optgroup>
+                <optgroup label="Minor Scales (2 Octaves, ♩=80)">
+                  <option value="SC_A_MIN">A Minor (1st Pos)</option>
+                  <option value="SC_E_MIN">E Minor (1st & 5th Pos)</option>
+                  <option value="SC_B_MIN">B Minor (1st Pos)</option>
+                  <option value="SC_FS_MIN">F♯ Minor (1st & 5th Pos)</option>
+                  <option value="SC_CS_MIN">C♯ Minor (3rd Pos)</option>
+                  <option value="SC_GS_MIN">G♯ Minor (½ Pos)</option>
+                  <option value="SC_EB_MIN">E♭ Minor (1st & 5th Pos)</option>
+                  <option value="SC_BB_MIN">B♭ Minor (1st Pos)</option>
+                  <option value="SC_F_MIN">F Minor (1st & 5th Pos)</option>
+                  <option value="SC_C_MIN">C Minor (3rd Pos)</option>
+                  <option value="SC_G_MIN">G Minor (1st Pos)</option>
+                  <option value="SC_D_MIN">D Minor (3rd Pos)</option>
+                  <option value="SC_CHROM">Chromatic Scale on G (2 Octaves)</option>
+                </optgroup>
+              </select>
+
+              <select id="piece-sel" class="light-select" onchange="loadLibraryItem(this.value)">
+                <option value="">🎵 Choose Play-Along Piece...</option>
+                <optgroup label="Book 1 Pieces">
+                  <option value="PC_01">1. Hot Cross Buns</option>
+                  <option value="PC_02">2. Mary Had a Little Lamb</option>
+                  <option value="PC_03">3. Twinkle, Twinkle, Little Star</option>
+                  <option value="PC_04">4. Little Hans</option>
+                  <option value="PC_05">5. Au Clair de la Lune</option>
+                  <option value="PC_06">6. Ode to Joy (1st Pos)</option>
+                  <option value="PC_07">7. Frère Jacques</option>
+                  <option value="PC_08">8. Amazing Grace (1st Pos)</option>
+                  <option value="PC_09">9. Minuet in G</option>
+                  <option value="PC_10">10. Greensleeves</option>
+                </optgroup>
+                <optgroup label="Book 2 Pieces in Positions">
+                  <option value="B2_ODE">Ode to Joy (3rd Position)</option>
+                  <option value="B2_GRACE">Amazing Grace (3rd Position)</option>
+                  <option value="B2_TWINKLE5">Twinkle, Twinkle (5th Position)</option>
+                  <option value="B2_BAGPIPE">Bagpipe Dance (Double Stops)</option>
+                </optgroup>
+              </select>
+            </div>
+          </div>
+
+          <!-- Lab 3: Clap Beat Pad -->
+          <div id="lab-rhythm" style="display: none;">
+            <p style="font-size: 10.5px; color: #57534e; margin-bottom: 5px;">Clap & count the current time signature before bowing! Tap in time with the beat:</p>
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <button type="button" class="btn btn-amber" onclick="tapRhythmPad()">👏 TAP BEAT (Or Press Spacebar)</button>
+              <button type="button" class="btn btn-outline" onclick="playRhythmDemo()">▶ Hear Bar Rhythm</button>
+              <span id="tap-feedback" style="font-size: 11px; font-weight: 800; color: var(--emerald); margin-left: auto;">Ready!</span>
+            </div>
+          </div>
+
+          <!-- Lab 4: Book 2 Bow Strokes, Harmonics & Vibrato Encyclopedia -->
+          <div id="lab-strokes" style="display: none;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 10px;">
+              <div style="background:#fff; padding:4px 6px; border-radius:4px;"><strong style="color:#92400e;">Martelé & Collé:</strong> Pinch string at frog/middle, release with quick bow, stop.</div>
+              <div style="background:#fff; padding:4px 6px; border-radius:4px;"><strong style="color:#92400e;">Spiccato & Sautillé:</strong> Drop bow near balance point to bounce; Sautillé bounces in middle.</div>
+              <div style="background:#fff; padding:4px 6px; border-radius:4px;"><strong style="color:#92400e;">Louré & Ricochet:</strong> Louré pulses notes in 1 bow; Ricochet bounces several notes on 1 throw.</div>
+              <div style="background:#fff; padding:4px 6px; border-radius:4px;"><strong style="color:#92400e;">Natural Harmonics:</strong> Touch lightly at ½ string (5th pos 3rd finger) = 1 octave above open!</div>
+            </div>
+          </div>
+
+          <!-- Lab 5: Parts Quiz -->
+          <div id="lab-parts" style="display: none;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; font-weight: 800;">
+              <span>Tap Violin/Bow Part: <u id="quiz-prompt" style="color: var(--amber);">Bridge</u></span>
+              <span id="quiz-status" style="color: var(--emerald);">Score: 0/13</span>
+            </div>
+            <div id="quiz-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="homework-box">
+        <strong>📓 Daily Practice Routine & Homework</strong>
+        <span id="week-hw">Daily posture holds (3 × 30 seconds), pizzicato string names, listen to Book 1 recording once.</span>
+      </div>
+    </section>
+
+    <!-- RIGHT PAGE: MP3 BINDER PLAYER + INTERACTIVE SHEET MUSIC + 6-POSITION FINGERBOARD -->
+    <section class="page-right">
+      <div>
+        <div class="page-header">
+          <div class="ex-tabs" id="ex-tabs">
+            <button type="button" class="ex-tab active" onclick="loadExercise(0)">Ex 1.1</button>
+            <button type="button" class="ex-tab" onclick="loadExercise(1)">Ex 1.2</button>
+            <button type="button" class="ex-tab" onclick="loadExercise(2)">Ex 1.3</button>
+          </div>
+          <div style="display: flex; gap: 5px; align-items: center; flex-wrap: wrap;">
+            <select id="top-sig-select" class="light-select" onchange="changeTimeSignature(this.value)" title="Change Time Signature">
+              <option value="4">4/4 Time</option>
+              <option value="3">3/4 Waltz</option>
+              <option value="2">2/4 March</option>
+              <option value="6">6/8 Time</option>
+            </select>
+            <span class="badge" id="score-bpm-badge">♩ = 60 BPM</span>
+          </div>
+        </div>
+
+        <h3 class="serif-title" style="font-size: 19px; margin-bottom: 2px;" id="ex-title">Exercise 1.1 · Pluck A and E</h3>
+        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;" id="ex-desc">Pizzicato (pluck) with right index finger over fingerboard. Say each string name.</p>
+
+        <!-- VIOLIN PLAY-ALONG MP3 BINDER BAR (75%, 90%, 100% SPEED) -->
+        <div class="mp3-bar">
+          <div style="display: flex; align-items: center; gap: 5px;">
+            <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #78350f;">🎧 MP3 Track:</span>
+            <code id="mp3-filename" style="font-size: 10.5px; color: #9a5b13; font-weight: 700;">audio/ex01_1.mp3</code>
+          </div>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <button type="button" class="speed-pill" id="sp-75" onclick="setMp3Rate(0.75)">Slow 75%</button>
+            <button type="button" class="speed-pill" id="sp-90" onclick="setMp3Rate(0.9)">90%</button>
+            <button type="button" class="speed-pill active" id="sp-100" onclick="setMp3Rate(1.0)">Full 100%</button>
+          </div>
+          <audio id="real-mp3-player" controls preload="none" src="audio/ex01_1.mp3" style="height: 28px; width: 210px;"></audio>
+        </div>
+
+        <!-- SYNTH SCORE PLAYBACK & AI COACH TOOLBAR -->
+        <div class="score-toolbar">
+          <button type="button" class="btn btn-emerald" onclick="toggleScorePlay()">
+            <span id="play-icon">▶</span> <span id="play-label">Interactive Score Play-Along</span>
+          </button>
+          <button type="button" class="btn btn-purple" id="coach-btn" onclick="toggleWaitCoach()">
+            🎙️ Wait-For-Me Coach: OFF
+          </button>
+          <select id="accomp-select" class="light-select">
+            <option value="solo">🎻 Solo Violin</option>
+            <option value="chords">🎹 + Piano Chords</option>
+          </select>
+          <button type="button" class="btn btn-outline" id="loop-btn" onclick="toggleLoop()">🔁 Loop: ON</button>
+          <span id="count-banner" style="margin-left: auto; font-size: 11px; font-weight: 800; color: var(--amber); display: none;">Count: 1</span>
+        </div>
+
+        <div class="coach-banner">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:5px;">
+            <span id="coach-msg">🤖 <strong>Interactive Violin Coach:</strong> Click any note head below to hear pitch & see finger position!</span>
+            <div style="display:flex; gap:4px;">
+              <button type="button" class="btn btn-emerald" style="padding:2px 7px; font-size:10px;" onclick="simulateStudentNote('correct')">✅ Correct</button>
+              <button type="button" class="btn btn-rose" style="padding:2px 7px; font-size:10px;" onclick="simulateStudentNote('flat')">🔻 Flat</button>
+              <button type="button" class="btn btn-amber" style="padding:2px 7px; font-size:10px;" onclick="simulateStudentNote('wrong')">❌ Wrong Finger</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- INTERACTIVE SVG SHEET MUSIC -->
+        <div class="score-card">
+          <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 3px; display:flex; justify-content:space-between;">
+            <span>💡 Tap any note on the staff to hear it! Change Time Signature or Tempo anytime.</span>
+            <span id="active-pos-indicator" style="font-weight:800; color:#5b21b6;">Position: 1st</span>
+          </div>
+          <svg id="sheet-svg" viewBox="0 0 700 160" style="width: 100%; height: auto; min-width: 500px;">
+            <line x1="15" y1="45" x2="685" y2="45" stroke="#57534e" stroke-width="1.2" />
+            <line x1="15" y1="60" x2="685" y2="60" stroke="#57534e" stroke-width="1.2" />
+            <line x1="15" y1="75" x2="685" y2="75" stroke="#57534e" stroke-width="1.2" />
+            <line x1="15" y1="90" x2="685" y2="90" stroke="#57534e" stroke-width="1.2" />
+            <line x1="15" y1="105" x2="685" y2="105" stroke="#57534e" stroke-width="1.2" />
+            <text x="20" y="94" font-size="48" font-family="serif" fill="#1c1917">𝄞</text>
+            <text x="55" y="72" font-size="20" font-weight="bold" font-family="serif" fill="#1c1917">4</text>
+            <text x="55" y="98" font-size="20" font-weight="bold" font-family="serif" fill="#1c1917">4</text>
+          </svg>
+
+          <div class="bow-coach-bar">
+            <strong id="bow-dir-text" style="width: 120px; color: #1c1917;">Bow: Ready</strong>
+            <div class="bow-track"><div class="bow-fill" id="bow-bar"></div></div>
+            <span id="elbow-badge" style="font-weight: 700; color: #92400e; font-size: 10.5px;">Elbow Level: A String</span>
+          </div>
+        </div>
+
+        <!-- 6-POSITION INTERACTIVE VIOLIN FINGERBOARD -->
+        <div class="fb-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
+            <div style="display: flex; align-items: center; gap: 3px; flex-wrap: wrap;">
+              <span style="font-size: 10px; font-weight: 800; color: var(--amber-bright);">POSITION:</span>
+              <button type="button" class="pos-switch-btn" id="pos-btn-0" onclick="setFingerboardPosition(0)">½ Pos</button>
+              <button type="button" class="pos-switch-btn active" id="pos-btn-1" onclick="setFingerboardPosition(1)">1st Pos</button>
+              <button type="button" class="pos-switch-btn" id="pos-btn-2" onclick="setFingerboardPosition(2)">2nd Pos</button>
+              <button type="button" class="pos-switch-btn" id="pos-btn-3" onclick="setFingerboardPosition(3)">3rd Pos</button>
+              <button type="button" class="pos-switch-btn" id="pos-btn-4" onclick="setFingerboardPosition(4)">4th Pos</button>
+              <button type="button" class="pos-switch-btn" id="pos-btn-5" onclick="setFingerboardPosition(5)">5th Pos</button>
+            </div>
+            <span id="active-pitch-label" style="font-family: monospace; font-size: 10.5px; background: #29231e; padding: 2px 7px; border-radius: 4px; color: #fcd34d;">Target: A4 (440 Hz)</span>
+          </div>
+          <div class="fb-grid">
+            <div class="fb-header" id="fb-header-labels">
+              <span>Str</span><span>0 (Open)</span><span>1st Tape</span><span>Low 2</span><span>High 2</span><span>3rd Tape</span>
+            </div>
+            <div id="fb-rows">
+              <div class="fb-row"><span class="fb-string-name">E</span><button type="button" class="fb-note-btn" onclick="manualNoteClick('E5','E',0)">0 Open</button><button type="button" class="fb-note-btn" onclick="manualNoteClick('F#5','E',1)">1 (F#5)</button><button type="button" class="fb-note-btn" onclick="manualNoteClick('G5','E',2)">L2 (G5)</button><button type="button" class="fb-note-btn" onclick="manualNoteClick('G#5','E',3)">H2 (G#5)</button><button type="button" class="fb-note-btn" onclick="manualNoteClick('A5','E',4)">3 (A5)</button></div>
+              <div class="fb-row"><span class="fb-string-name">A</span><button type="button" class="fb-note-btn active" onclick="manualNoteClick('A4','A',0)">0 Open</button><button type="button" class="fb-note-btn" onclick="manualNoteClick('B4','A',1)">1 (B4)</button><button type="button" class="fb-note-btn" onclick="manualNoteClick('C5','A',2)">L2 (C5)</button><button type="button" class="fb-note-btn" onclick="manualNoteClick('C#5','A',3)">H2 (C#5)</button><button type="button" class="fb-note-btn" onclick="manualNoteClick('D5','A',4)">3 (D5 Ring)</button></div>
+              <div class="fb-row"><span class="fb-string-name">D</span><button type="button" class="fb-note-btn" onclick="manualNoteClick('D4','D',0)">0 Open</button><button type="button" class="fb-note-btn" onclick="manualNoteClick('E4','D',1)">1 (E4)</button><button type="button" class="fb-note-btn" onclick="manualNoteClick('F4','D',2)">L2 (F4)</button><button type="button" class="fb-note-btn" onclick="manualNoteClick('F#4','D',3)">H2 (F#4)</button><button type="button" class="fb-note-btn" onclick="manualNoteClick('G4','D',4)">3 (G4)</button></div>
+              <div class="fb-row"><span class="fb-string-name">G</span><button type="button" class="fb-note-btn" onclick="manualNoteClick('G3','G',0)">0 Open</button><button type="button" class="fb-note-btn" onclick="manualNoteClick('A3','G',1)">1 (A3)</button><button type="button" class="fb-note-btn" onclick="manualNoteClick('Bb3','G',2)">L2 (Bb3)</button><button type="button" class="fb-note-btn" onclick="manualNoteClick('B3','G',3)">H2 (B3)</button><button type="button" class="fb-note-btn" onclick="manualNoteClick('C4','G',4)">3 (C4)</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 6px; border-top: 1px solid #e7e0d2; font-size: 11px; color: var(--text-muted);">
+        <button type="button" class="btn btn-outline" onclick="stepWeek(-1)">← Previous Week</button>
+        <span id="footer-page-num" style="font-family: Georgia, serif; font-style: italic;">Week 1 of 48</span>
+        <button type="button" class="btn btn-outline" onclick="stepWeek(1)">Next Week →</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- BOTTOM MASTER STUDIO DOCK -->
+  <footer class="studio-dock">
+    <!-- METRONOME & TEMPO RANGE -->
+    <div class="dock-module">
+      <div class="dock-title">
+        <span>🔔 Metronome & Tempo Range (30–200 BPM)</span>
+        <span id="bpm-readout" style="font-family:monospace; font-size:11.5px; color:#fff;">60 BPM (Adagio)</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 5px;">
+        <button type="button" class="btn btn-amber" id="metro-btn" onclick="toggleMetronome()">▶ Beats</button>
+        <button type="button" class="btn btn-dark" onclick="changeBpm(-5)">−</button>
+        <input type="range" id="bpm-slider" min="30" max="200" value="60" oninput="setBpm(this.value)" style="flex: 1; accent-color: var(--amber-bright);">
+        <button type="button" class="btn btn-dark" onclick="changeBpm(5)">+</button>
+        <button type="button" class="btn btn-dark" onclick="tapTempo()" title="Click 3-4 times to set speed">👆 Tap</button>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
+        <div class="beat-dots" id="beat-dots"><div class="beat-dot"></div><div class="beat-dot"></div><div class="beat-dot"></div><div class="beat-dot"></div></div>
+        <div style="display: flex; gap: 3px; align-items: center;">
+          <button type="button" class="drone-btn" onclick="setBpm(54)">🐢 54</button>
+          <button type="button" class="drone-btn" onclick="setBpm(72)">🚶 72</button>
+          <button type="button" class="drone-btn" onclick="setBpm(80)">🎼 80</button>
+          <button type="button" class="drone-btn" onclick="setBpm(108)">🏃 108</button>
+          <select id="metro-sig" class="dark-select" onchange="changeTimeSignature(this.value)">
+            <option value="4">4/4</option><option value="3">3/4</option><option value="2">2/4</option><option value="6">6/8</option>
+          </select>
+          <select id="metro-sub" class="dark-select" onchange="updateMetroSettings()">
+            <option value="1">♩ Quarters</option><option value="2">♫ Eighths</option><option value="3">🎶 Triplets</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIVE TUNER & DRONES -->
+    <div class="dock-module">
+      <div class="dock-title"><span>🎯 Live Mic Pitch Detector & Drones</span><span id="tuner-readout" style="color: var(--emerald-bright);">Mic: Standby</span></div>
+      <div class="tuner-meter"><div class="tuner-center-mark"></div><div class="tuner-needle" id="tuner-needle"></div></div>
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 4px; flex-wrap: wrap;">
+        <button type="button" class="btn btn-dark" id="mic-btn" onclick="toggleMicTuner()">🎙️ Turn On Mic</button>
+        <div style="display: flex; align-items: center; gap: 3px;">
+          <span style="font-size: 10px; color: #a8a29e;">Drone:</span>
+          <button type="button" class="drone-btn" id="drone-G3" onclick="toggleDrone('G3', 196.00)">G3</button>
+          <button type="button" class="drone-btn" id="drone-D4" onclick="toggleDrone('D4', 293.66)">D4</button>
+          <button type="button" class="drone-btn" id="drone-A4" onclick="toggleDrone('A4', 440.00)">A4</button>
+          <button type="button" class="drone-btn" id="drone-E5" onclick="toggleDrone('E5', 659.25)">E5</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRACTICE TIMERS -->
+    <div class="dock-module">
+      <div class="dock-title"><span>⏱️ Practice & Posture Timer</span><span id="timer-mode-label">Daily 15m</span></div>
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="font-family: monospace; font-size: 20px; font-weight: 800; color: var(--emerald-bright);" id="main-timer-display">15:00</div>
+        <div style="display: flex; gap: 4px;">
+          <button type="button" class="btn btn-emerald" id="timer-run-btn" onclick="toggleMainTimer()">Start</button>
+          <button type="button" class="btn btn-dark" onclick="setMainTimer(15*60, 'Daily 15m')">15m</button>
+          <button type="button" class="btn btn-dark" onclick="setMainTimer(30, '30s Hold')">30s</button>
+          <button type="button" class="btn btn-dark" onclick="setMainTimer(10, '10s Lift')">10s</button>
+        </div>
+      </div>
+      <div style="font-size: 10px; color: #a8a29e;">Book 1 (W1–24) + Book 2 Positions & 24 Scales (W25–48)</div>
+    </div>
+  </footer>
+
+<script>
+// ============================================================================
+// 1. PITCHES & ALL 6 POSITIONS TABLE (FROM BOOK 2 "UNDERSTANDING POSITIONS")
+// ============================================================================
+const PITCHES = {
+  "G3": 196.00, "G#3": 207.65, "Ab3": 207.65, "A3": 220.00, "A#3": 233.08, "Bb3": 233.08, "B3": 246.94,
+  "C4": 261.63, "C#4": 277.18, "Db4": 277.18, "D4": 293.66, "D#4": 311.13, "Eb4": 311.13, "E4": 329.63,
+  "F4": 349.23, "F#4": 369.99, "G4": 392.00, "G#4": 415.30, "Ab4": 415.30, "A4": 440.00, "A#4": 466.16, "Bb4": 466.16, "B4": 493.88,
+  "C5": 523.25, "C#5": 554.37, "Db5": 554.37, "D5": 587.33, "D#5": 622.25, "Eb5": 622.25, "E5": 659.25, "E#5": 698.46,
+  "F5": 698.46, "F#5": 739.99, "G5": 783.99, "G#5": 830.61, "Ab5": 830.61, "A5": 880.00, "Bb5": 932.33, "B5": 987.77,
+  "C6": 1046.50, "C#6": 1108.73, "D6": 1174.66, "Eb6": 1244.51, "E6": 1318.51, "F6": 1396.91, "F#6": 1479.98
+};
+
+const STAFF_Y = {
+  "G3": 142, "G#3": 142, "Ab3": 138, "A3": 135, "A#3": 135, "Bb3": 127, "B3": 127,
+  "C4": 120, "C#4": 120, "Db4": 115, "D4": 112, "D#4": 112, "Eb4": 105, "E4": 105,
+  "F4": 97.5, "F#4": 97.5, "G4": 90, "G#4": 90, "Ab4": 86, "A4": 82.5, "A#4": 82.5, "Bb4": 75, "B4": 75,
+  "C5": 67.5, "C#5": 67.5, "Db5": 62, "D5": 60, "D#5": 60, "Eb5": 52.5, "E5": 52.5, "E#5": 45,
+  "F5": 45, "F#5": 45, "G5": 37.5, "G#5": 37.5, "A5": 30, "Bb5": 24, "B5": 24,
+  "C6": 18, "C#6": 18, "D6": 12, "E6": 8, "F6": 6, "F#6": 6, "REST": 75
+};
+
+const POSITION_MAPS = {
+  0: {
+    name: "½ (Half) Position",
+    headers: ["Str", "0 (Open)", "1st (½ Pos)", "2nd Finger", "3rd Finger", "4th Finger"],
+    guide: "<strong>½ (Half) Position (Book 2):</strong> Sits one half-step below 1st position (1st finger plays G♯/A♭, D♯/E♭, A♯/B♭, F). Used in G♯ minor and F♯ major arpeggios.",
+    rows: [
+      { str: "E", cells: [{p:"E5",l:"0 Open"}, {p:"F5",l:"1 (F5)"}, {p:"G5",l:"2 (G5)"}, {p:"G#5",l:"3 (G#5)"}, {p:"A#5",l:"4 (A#5)"}] },
+      { str: "A", cells: [{p:"A4",l:"0 Open"}, {p:"Bb4",l:"1 (A#/Bb)"}, {p:"C5",l:"2 (C5)"}, {p:"C#5",l:"3 (C#5)"}, {p:"D#5",l:"4 (D#5)"}] },
+      { str: "D", cells: [{p:"D4",l:"0 Open"}, {p:"Eb4",l:"1 (D#/Eb)"}, {p:"F4",l:"2 (F4)"}, {p:"F#4",l:"3 (F#4)"}, {p:"G#4",l:"4 (G#4)"}] },
+      { str: "G", cells: [{p:"G3",l:"0 Open"}, {p:"G#3",l:"1 (G#/Ab)"}, {p:"A#3",l:"2 (A#/Bb)"}, {p:"B3",l:"3 (B3)"}, {p:"C#4",l:"4 (C#4)"}] }
+    ]
+  },
+  1: {
+    name: "1st Position",
+    headers: ["Str", "0 (Open)", "1st Tape", "Low 2", "High 2", "3rd Tape (Ring)"],
+    guide: "<strong>1st Position (Book 1 & 2):</strong> 1st finger plays A on G, E on D, B on A, and F♯/F on E. Keep your thumb soft and a mouse-hole space under the neck.",
+    rows: [
+      { str: "E", cells: [{p:"E5",l:"0 Open"}, {p:"F#5",l:"1 (F#5)"}, {p:"G5",l:"L2 (G5)"}, {p:"G#5",l:"H2 (G#5)"}, {p:"A5",l:"3 (A5)"}] },
+      { str: "A", cells: [{p:"A4",l:"0 Open"}, {p:"B4",l:"1 (B4)"}, {p:"C5",l:"L2 (C5)"}, {p:"C#5",l:"H2 (C#5)"}, {p:"D5",l:"3 (D5 Ring)"}] },
+      { str: "D", cells: [{p:"D4",l:"0 Open"}, {p:"E4",l:"1 (E4)"}, {p:"F4",l:"L2 (F4)"}, {p:"F#4",l:"H2 (F#4)"}, {p:"G4",l:"3 (G4)"}] },
+      { str: "G", cells: [{p:"G3",l:"0 Open"}, {p:"A3",l:"1 (A3)"}, {p:"Bb3",l:"L2 (Bb3)"}, {p:"B3",l:"H2 (B3)"}, {p:"C4",l:"3 (C4)"}] }
+    ]
+  },
+  2: {
+    name: "2nd Position",
+    headers: ["Str", "0 (Open)", "1st (2nd Pos)", "2nd Finger", "3rd Finger", "4th Finger"],
+    guide: "<strong>2nd Position (Book 2 W44):</strong> 1st finger plays the note two letters above the open string: B/B♭ on G, F♯/F on D, C♯/C on A, G♯/G on E.",
+    rows: [
+      { str: "E", cells: [{p:"E5",l:"0 Open"}, {p:"G5",l:"1 (G5)"}, {p:"A5",l:"2 (A5)"}, {p:"B5",l:"3 (B5)"}, {p:"C6",l:"4 (C6)"}] },
+      { str: "A", cells: [{p:"A4",l:"0 Open"}, {p:"C5",l:"1 (C5)"}, {p:"D5",l:"2 (D5)"}, {p:"E5",l:"3 (E5)"}, {p:"F5",l:"4 (F5)"}] },
+      { str: "D", cells: [{p:"D4",l:"0 Open"}, {p:"F4",l:"1 (F4)"}, {p:"G4",l:"2 (G4)"}, {p:"A4",l:"3 (A4)"}, {p:"B4",l:"4 (B4)"}] },
+      { str: "G", cells: [{p:"G3",l:"0 Open"}, {p:"B3",l:"1 (B3)"}, {p:"C4",l:"2 (C4)"}, {p:"D4",l:"3 (D4)"}, {p:"E4",l:"4 (E4)"}] }
+    ]
+  },
+  3: {
+    name: "3rd Position",
+    headers: ["Str", "0 (Open)", "1st (3rd Pos)", "2nd Finger", "3rd Finger", "4th Finger"],
+    guide: "<strong>3rd Position (Book 2 W25–30):</strong> 1st finger goes where 3rd finger was in 1st position (C on G, G on D, D on A, A on E). Base of palm lightly touches violin body.",
+    rows: [
+      { str: "E", cells: [{p:"E5",l:"0 Open"}, {p:"A5",l:"1 (A5)"}, {p:"B5",l:"2 (B5)"}, {p:"C6",l:"3 (C6)"}, {p:"D6",l:"4 (D6)"}] },
+      { str: "A", cells: [{p:"A4",l:"0 Open"}, {p:"D5",l:"1 (D5 Ring)"}, {p:"E5",l:"2 (E5 Ring)"}, {p:"F5",l:"3 (F/F#5)"}, {p:"G5",l:"4 (G5)"}] },
+      { str: "D", cells: [{p:"D4",l:"0 Open"}, {p:"G4",l:"1 (G4 Ring)"}, {p:"A4",l:"2 (A4 Ring)"}, {p:"B4",l:"3 (B4)"}, {p:"C5",l:"4 (C/C#5)"}] },
+      { str: "G", cells: [{p:"G3",l:"0 Open"}, {p:"C4",l:"1 (C4)"}, {p:"D4",l:"2 (D4 Ring)"}, {p:"E4",l:"3 (E4)"}, {p:"F4",l:"4 (F4)"}] }
+    ]
+  },
+  4: {
+    name: "4th Position",
+    headers: ["Str", "0 (Open)", "1st (4th Pos)", "2nd Finger", "3rd Finger", "4th (Octave)"],
+    guide: "<strong>4th Position (Book 2 W44):</strong> 1st finger plays four letters above open string (D on G, A on D, E on A, B on E). Used in E & E♭ arpeggios.",
+    rows: [
+      { str: "E", cells: [{p:"E5",l:"0 Open"}, {p:"B5",l:"1 (B5)"}, {p:"C#6",l:"2 (C#6)"}, {p:"D6",l:"3 (D6)"}, {p:"E6",l:"4 (E6 Oct)"}] },
+      { str: "A", cells: [{p:"A4",l:"0 Open"}, {p:"E5",l:"1 (E5)"}, {p:"F#5",l:"2 (F#5)"}, {p:"G#5",l:"3 (G#5)"}, {p:"A5",l:"4 (A5 Oct)"}] },
+      { str: "D", cells: [{p:"D4",l:"0 Open"}, {p:"A4",l:"1 (A4)"}, {p:"B4",l:"2 (B4)"}, {p:"C#5",l:"3 (C#5)"}, {p:"D5",l:"4 (D5 Oct)"}] },
+      { str: "G", cells: [{p:"G3",l:"0 Open"}, {p:"D4",l:"1 (D4)"}, {p:"E4",l:"2 (E4)"}, {p:"F#4",l:"3 (F#4)"}, {p:"G4",l:"4 (G4 Oct)"}] }
+    ]
+  },
+  5: {
+    name: "5th Position",
+    headers: ["Str", "0 (Open)", "1st (5th Pos)", "2nd Finger", "3rd (Octave)", "4th Finger"],
+    guide: "<strong>5th Position (Book 2 W34–37):</strong> 1st finger goes where 3rd finger was in 3rd position (E on G, B on D, F♯/F on A, C♯/C on E). 3rd finger plays octave of open string!",
+    rows: [
+      { str: "E", cells: [{p:"E5",l:"0 Open"}, {p:"C6",l:"1 (C6)"}, {p:"D6",l:"2 (D6)"}, {p:"E6",l:"3 (E6 Oct)"}, {p:"F6",l:"4 (F/F#6)"}] },
+      { str: "A", cells: [{p:"A4",l:"0 Open"}, {p:"F5",l:"1 (F/F#5)"}, {p:"G5",l:"2 (G5)"}, {p:"A5",l:"3 (A5 Oct)"}, {p:"B5",l:"4 (B5)"}] },
+      { str: "D", cells: [{p:"D4",l:"0 Open"}, {p:"B4",l:"1 (B4)"}, {p:"C5",l:"2 (C/C#5)"}, {p:"D5",l:"3 (D5 Oct)"}, {p:"E5",l:"4 (E5)"}] },
+      { str: "G", cells: [{p:"G3",l:"0 Open"}, {p:"E4",l:"1 (E4)"}, {p:"F4",l:"2 (F/F#4)"}, {p:"G4",l:"3 (G4 Oct)"}, {p:"A4",l:"4 (A4)"}] }
+    ]
+  }
+};
+
+const n = (p, s, f, b=1, bow="∏") => ({ p, s, f, b, bow });
+
+// ============================================================================
+// 2. COMPLETE 48-WEEK SYLLABUS + MP3 TRACK LINKS (audio/ & audio2/)
+// ============================================================================
+const SYLLABUS = [
+  // --- BOOK 1: WEEKS 1–24 ---
+  { week: 1, phase: 0, pos: 1, title: "The Instrument and Posture", bpm: 60, sig: 4,
+    goal: "Name the parts, stand in rest and playing position, hold the violin for 30 seconds.",
+    hw: "Daily posture holds (3 × 30 seconds), pizzicato string names, listen to Book 1 recording once.",
+    checks: ["Parts quiz: scroll, pegs, fine tuners, fingerboard, bridge, f-holes, chinrest, tailpiece", "Feet chart: left foot slightly forward, weight balanced (Hold 10s, repeat 5×)", "Violin lift: rest position to shoulder, left hand free", "Pizzicato on open A and E, 4 plucks each"],
+    exercises: [
+      { id: "1.1", mp3: "audio/ex01_1.mp3", title: "Exercise 1.1 · Pluck A and E", desc: "Pizzicato (pluck) with right index finger over fingerboard.", mode: "pizz", notes: [n("A4","A",0,1,"A"), n("A4","A",0,1,"A"), n("A4","A",0,1,"A"), n("A4","A",0,1,"A"), n("E5","E",0,1,"E"), n("E5","E",0,1,"E"), n("E5","E",0,1,"E"), n("E5","E",0,1,"E"), n("A4","A",0,2,"A"), n("E5","E",0,2,"E"), n("A4","A",0,4,"A")] },
+      { id: "1.2", mp3: "audio/ex01_2.mp3", title: "Exercise 1.2 · Pluck D and G", desc: "Keep the violin up on the shoulder while plucking.", mode: "pizz", notes: [n("D4","D",0,1,"D"), n("D4","D",0,1,"D"), n("D4","D",0,1,"D"), n("D4","D",0,1,"D"), n("G3","G",0,1,"G"), n("G3","G",0,1,"G"), n("G3","G",0,1,"G"), n("G3","G",0,1,"G"), n("D4","D",0,2,"D"), n("G3","G",0,2,"G"), n("D4","D",0,4,"D")] },
+      { id: "1.3", mp3: "audio/ex01_3.mp3", title: "Exercise 1.3 · String Hop", desc: "Pluck across all four strings, low to high and back.", mode: "pizz", notes: [n("G3","G",0,1,"G"), n("D4","D",0,1,"D"), n("A4","A",0,1,"A"), n("E5","E",0,1,"E"), n("E5","E",0,1,"E"), n("A4","A",0,1,"A"), n("D4","D",0,1,"D"), n("G3","G",0,1,"G"), n("G3","G",0,4,"G")] }
+    ]
+  },
+  { week: 2, phase: 0, pos: 1, title: "Bow Hold & Rhythm with Pizzicato", bpm: 60, sig: 4,
+    goal: "Relaxed bow hold on a pencil and on the bow.",
+    hw: "5 minutes of bow-hold games daily; posture holds.",
+    checks: ["Pencil hold: bent thumb opposite middle fingers, curved pinky (30s)", "Windshield wipers & Rocket bow games", "Quarter, half and whole notes with rests"],
+    exercises: [
+      { id: "2.1", mp3: "audio/ex02_1.mp3", title: "Exercise 2.1 · Quarter, Half & Whole Notes", desc: "Pizzicato. Count aloud: 1-2-3-4.", mode: "pizz", notes: [n("A4","A",0,1,"A"), n("A4","A",0,1,"A"), n("A4","A",0,1,"A"), n("A4","A",0,1,"A"), n("A4","A",0,2,"A"), n("A4","A",0,2,"A"), n("A4","A",0,4,"A")] },
+      { id: "2.2", mp3: "audio/ex02_2.mp3", title: "Exercise 2.2 · Pluck and Rest", desc: "On each rest, stay still and silent for one beat.", mode: "pizz", notes: [n("A4","A",0,1,"A"), n("REST","-",-1,1,"Rest"), n("A4","A",0,1,"A"), n("REST","-",-1,1,"Rest"), n("E5","E",0,1,"E"), n("REST","-",-1,1,"Rest"), n("A4","A",0,4,"A")] },
+      { id: "2.3", mp3: "audio/ex02_3.mp3", title: "Exercise 2.3 · Rhythm on All Strings", desc: "Same rhythm on every string, then walk back down.", mode: "pizz", notes: [n("G3","G",0,1,"G"), n("G3","G",0,1,"G"), n("G3","G",0,2,"G"), n("D4","D",0,1,"D"), n("D4","D",0,1,"D"), n("D4","D",0,2,"D"), n("A4","A",0,2,"A"), n("E5","E",0,2,"E")] }
+    ]
+  },
+  { week: 3, phase: 0, pos: 1, title: "First Bowing on Open Strings", bpm: 60, sig: 4,
+    goal: "Short, straight bows in the middle of the bow on A and E.",
+    hw: "Echo patterns on A and E, 5 minutes daily.",
+    checks: ["Mirror bowing: 8 short down-up bows on A", "Rhythm echo on open A", "Stop-and-set bow placement"],
+    exercises: [
+      { id: "3.1", mp3: "audio/ex03_1.mp3", title: "Exercise 3.1 · Open A and E Bowing", desc: "Middle of the bow, straight and even.", mode: "arco", notes: [n("A4","A",0,1,"∏"), n("A4","A",0,1,"V"), n("A4","A",0,1,"∏"), n("A4","A",0,1,"V"), n("E5","E",0,1,"∏"), n("E5","E",0,1,"V"), n("A4","A",0,4,"∏")] },
+      { id: "3.2", mp3: "audio/ex03_2.mp3", title: "Exercise 3.2 · Long and Short Bows", desc: "Whole notes use the whole bow; quarter notes use the middle.", mode: "arco", notes: [n("A4","A",0,4,"∏"), n("A4","A",0,4,"V"), n("A4","A",0,2,"∏"), n("A4","A",0,2,"V"), n("A4","A",0,1,"∏"), n("A4","A",0,1,"V")] },
+      { id: "3.3", mp3: "audio/ex03_3.mp3", title: "Exercise 3.3 · Stop and Set", desc: "Stop the bow on each rest, then set it again.", mode: "arco", notes: [n("A4","A",0,1,"∏"), n("REST","-",-1,1,"Stop"), n("A4","A",0,1,"V"), n("REST","-",-1,1,"Stop"), n("E5","E",0,1,"∏"), n("REST","-",-1,1,"Stop"), n("A4","A",0,4,"∏")] }
+    ]
+  },
+  { week: 4, phase: 0, pos: 1, title: "String Crossings on All Four Strings", bpm: 60, sig: 4,
+    goal: "Change between strings by moving the elbow level.",
+    hw: "Open-string pairs with metronome at 60 BPM.",
+    checks: ["Elbow levels for G, D, A, E strings", "Open-string pairs D–A and G–D", "Countdown crossing drill"],
+    exercises: [
+      { id: "4.1", mp3: "audio/ex04_1.mp3", title: "Exercise 4.1 · D and A Pairs", desc: "Move elbow to new string level before note.", mode: "arco", notes: [n("D4","D",0,1,"∏"), n("D4","D",0,1,"V"), n("A4","A",0,1,"∏"), n("A4","A",0,1,"V"), n("D4","D",0,4,"∏")] },
+      { id: "4.2", mp3: "audio/ex04_2.mp3", title: "Exercise 4.2 · G and D Pairs", desc: "The G string needs the highest elbow.", mode: "arco", notes: [n("G3","G",0,1,"∏"), n("G3","G",0,1,"V"), n("D4","D",0,1,"∏"), n("D4","D",0,1,"V"), n("G3","G",0,4,"∏")] },
+      { id: "4.3", mp3: "audio/ex04_3.mp3", title: "Exercise 4.3 · Countdown", desc: "Four strings, low to high, then crossing every note.", mode: "arco", notes: [n("G3","G",0,1,"∏"), n("D4","D",0,1,"V"), n("A4","A",0,1,"∏"), n("E5","E",0,1,"V"), n("A4","A",0,4,"∏")] }
+    ]
+  },
+  { week: 5, phase: 0, pos: 1, title: "First and Second Fingers", bpm: 60, sig: 4,
+    goal: "Accurate fingers 1 and 2 on the A string with a relaxed left hand.",
+    hw: "Finger hops and echoes on A string, 10 minutes daily.",
+    checks: ["Tape check: pizzicato A–B–C#", "Finger hops on 1st finger", "Tuner check on B and C#"],
+    exercises: [
+      { id: "5.1", mp3: "audio/ex05_1.mp3", title: "Exercise 5.1 · First Finger", desc: "0 = open, 1 = first finger. Drop finger, don't press hard.", mode: "arco", notes: [n("A4","A",0,2,"∏ 0"), n("B4","A",1,2,"V 1"), n("A4","A",0,1,"∏ 0"), n("B4","A",1,1,"V 1"), n("A4","A",0,4,"∏ 0")] },
+      { id: "5.2", mp3: "audio/ex05_2.mp3", title: "Exercise 5.2 · Second Finger (High 2)", desc: "High 2nd finger C# sits close to 3rd finger tape.", mode: "arco", notes: [n("A4","A",0,1,"∏ 0"), n("B4","A",1,1,"V 1"), n("C#5","A",3,2,"∏ 2"), n("B4","A",1,1,"V 1"), n("A4","A",0,4,"∏ 0")] },
+      { id: "5.3", mp3: "audio/ex05_3.mp3", title: "Exercise 5.3 · Finger Echoes", desc: "Teacher plays a bar, student echoes it.", mode: "arco", notes: [n("B4","A",1,1,"∏ 1"), n("B4","A",1,1,"V 1"), n("C#5","A",3,1,"∏ 2"), n("C#5","A",3,1,"V 2"), n("A4","A",0,4,"∏ 0")] }
+    ]
+  },
+  { week: 6, phase: 0, pos: 1, title: "Third Finger and First Tune", bpm: 60, sig: 4,
+    goal: "Fingers 1–3 on A and E; play Desert Sunrise and Twinkle.",
+    hw: "Ladders, Desert Sunrise, first Twinkle variation.",
+    checks: ["A-string ladder: A–B–C#–D–C#–B–A", "E-string ladder: E–F#–G#–A", "Third-finger match ring test with open D"],
+    exercises: [
+      { id: "6.1", mp3: "audio/ex06_1.mp3", title: "Exercise 6.1 · A-String Finger Ladder", desc: "D5 should ring sympathetically with open D.", mode: "arco", notes: [n("A4","A",0,1,"∏ 0"), n("B4","A",1,1,"V 1"), n("C#5","A",3,1,"∏ 2"), n("D5","A",4,1,"V 3"), n("C#5","A",3,1,"∏ 2"), n("B4","A",1,1,"V 1"), n("A4","A",0,2,"∏ 0")] },
+      { id: "6.2", mp3: "audio/ex06_2.mp3", title: "Exercise 6.2 · E-String Ladder", desc: "Same finger pattern on the E string.", mode: "arco", notes: [n("E5","E",0,1,"∏ 0"), n("F#5","E",1,1,"V 1"), n("G#5","E",3,1,"∏ 2"), n("A5","E",4,1,"V 3"), n("E5","E",0,4,"∏ 0")] },
+      { id: "6.3", mp3: "audio/ex06_3.mp3", title: "Exercise 6.3 · Desert Sunrise", desc: "Original practice tune. Separate bows.", mode: "arco", notes: [n("A4","A",0,1,"∏ 0"), n("B4","A",1,1,"V 1"), n("C#5","A",3,1,"∏ 2"), n("D5","A",4,1,"V 3"), n("E5","E",0,2,"∏ 0"), n("D5","A",4,1,"V 3"), n("C#5","A",3,1,"∏ 2"), n("B4","A",1,1,"V 1"), n("A4","A",0,4,"∏ 0")] }
+    ]
+  },
+
+  // WEEKS 7–12 (PHASE 2)
+  { week: 7, phase: 1, pos: 1, title: "Rhythm Patterns with Eighth Notes", bpm: 66, sig: 4,
+    goal: "Two Twinkle rhythm variations with even, short bows.",
+    hw: "Each learned variation 3 times daily, plus ladders.",
+    checks: ["Say rhythm ('run-ning walk') before playing", "Play on open A, then add melody"],
+    exercises: [
+      { id: "7.1", mp3: "audio/ex07_1.mp3", title: "Exercise 7.1 · Running and Walking", desc: "Two eighth notes = one beat.", mode: "arco", notes: [n("A4","A",0,0.5,"∏"), n("A4","A",0,0.5,"V"), n("A4","A",0,1,"∏"), n("B4","A",1,0.5,"V"), n("B4","A",1,0.5,"∏"), n("B4","A",1,1,"V"), n("D5","A",4,2,"∏ 3")] },
+      { id: "7.2", mp3: "audio/ex07_2.mp3", title: "Exercise 7.2 · Short-Short-Long", desc: "Small bows for eighths, more bow for half note.", mode: "arco", notes: [n("A4","A",0,0.5,"∏"), n("A4","A",0,0.5,"V"), n("A4","A",0,2,"∏"), n("E5","E",0,0.5,"V"), n("E5","E",0,0.5,"∏"), n("E5","E",0,2,"V")] },
+      { id: "7.3", mp3: "audio/ex07_3.mp3", title: "Exercise 7.3 · Morning Walk", desc: "Original tune using eighth-note pairs.", mode: "arco", notes: [n("A4","A",0,1,"∏ 0"), n("A4","A",0,0.5,"V"), n("B4","A",1,0.5,"∏"), n("C#5","A",3,1,"V 2"), n("D5","A",4,1,"∏ 3"), n("A4","A",0,4,"V 0")] }
+    ]
+  },
+  { week: 8, phase: 1, pos: 1, title: "Long Bows and Bow Speed", bpm: 66, sig: 4,
+    goal: "All Twinkle variations plus theme with longer, smooth bows.",
+    hw: "Full Twinkle set once daily, long-bow drill.",
+    checks: ["4-count bows on open strings", "Fast and slow bow speed contrast"],
+    exercises: [
+      { id: "8.1", mp3: "audio/ex08_1.mp3", title: "Exercise 8.1 · Four-Count Bows", desc: "Use whole bow, slow and even.", mode: "arco", notes: [n("A4","A",0,4,"∏"), n("A4","A",0,4,"V"), n("E5","E",0,4,"∏"), n("D4","D",0,4,"V")] },
+      { id: "8.2", mp3: "audio/ex08_2.mp3", title: "Exercise 8.2 · Fast and Slow Bows", desc: "Quarters: short bows. Whole notes: full bows.", mode: "arco", notes: [n("A4","A",0,1,"∏"), n("A4","A",0,1,"V"), n("A4","A",0,1,"∏"), n("A4","A",0,1,"V"), n("A4","A",0,4,"∏")] },
+      { id: "8.3", mp3: "audio/ex08_3.mp3", title: "Exercise 8.3 · Slow River", desc: "Smooth, connected bow changes.", mode: "arco", notes: [n("A4","A",0,2,"∏ 0"), n("C#5","A",3,2,"V 2"), n("E5","E",0,4,"∏ 0"), n("D5","A",4,2,"V 3"), n("A4","A",0,4,"∏ 0")] }
+    ]
+  },
+  { week: 9, phase: 1, pos: 1, title: "Crossing Between A and E (Lightly Row)", bpm: 66, sig: 4,
+    goal: "Learn Lightly Row with clear string crossings A–E.",
+    hw: "Practice chunks; listen to recording daily.",
+    checks: ["A–E crossings", "Stop bow on string during rests"],
+    exercises: [
+      { id: "9.1", mp3: "audio/ex09_1.mp3", title: "Exercise 9.1 · A–E Crossings", desc: "Small elbow movement.", mode: "arco", notes: [n("A4","A",0,2,"∏"), n("E5","E",0,2,"V"), n("A4","A",0,1,"∏"), n("E5","E",0,1,"V"), n("A4","A",0,4,"∏")] },
+      { id: "9.2", mp3: "audio/ex09_2.mp3", title: "Exercise 9.2 · Rests in the Music", desc: "Stop bow on string during each rest.", mode: "arco", notes: [n("A4","A",0,1,"∏"), n("B4","A",1,1,"V"), n("C#5","A",3,1,"∏"), n("REST","-",-1,1,"Rest"), n("A4","A",0,4,"V")] },
+      { id: "9.3", mp3: "audio/ex09_3.mp3", title: "Exercise 9.3 · Two Strings", desc: "Original tune moving between A and E strings.", mode: "arco", notes: [n("E5","E",0,1,"∏"), n("C#5","A",3,1,"V"), n("D5","A",4,1,"∏"), n("B4","A",1,1,"V"), n("A4","A",0,4,"∏")] }
+    ]
+  },
+  { week: 10, phase: 1, pos: 1, title: "Reading Rhythm & Note Names", bpm: 66, sig: 4,
+    goal: "Read and count quarter, half, whole notes and quarter rests.",
+    hw: "5 minutes of note-name cards; Lightly Row.",
+    checks: ["Clap and count note values on open D", "Name notes on A and E strings"],
+    exercises: [
+      { id: "10.1", mp3: "audio/ex10_1.mp3", title: "Exercise 10.1 · Note Values on Open D", desc: "Clap first, then play.", mode: "arco", notes: [n("D4","D",0,4,"∏"), n("D4","D",0,2,"V"), n("D4","D",0,2,"∏"), n("D4","D",0,1,"V"), n("D4","D",0,1,"∏")] },
+      { id: "10.2", mp3: "audio/ex10_2.mp3", title: "Exercise 10.2 · Name the Notes: A String", desc: "Say letter name, then play.", mode: "arco", notes: [n("A4","A",0,1,"A"), n("B4","A",1,1,"B"), n("C#5","A",3,1,"C#"), n("D5","A",4,1,"D"), n("A4","A",0,4,"A")] },
+      { id: "10.3", mp3: "audio/ex10_3.mp3", title: "Exercise 10.3 · Name the Notes: E String", desc: "Same pattern on E string.", mode: "arco", notes: [n("E5","E",0,1,"E"), n("F#5","E",1,1,"F#"), n("G#5","E",3,1,"G#"), n("A5","E",4,1,"A"), n("E5","E",0,4,"E")] }
+    ]
+  },
+  { week: 11, phase: 1, pos: 1, title: "Steady Eighth Notes (Song of the Wind)", bpm: 66, sig: 4,
+    goal: "Learn Song of the Wind with steady eighth-note bowing.",
+    hw: "Song of the Wind slow, then at target tempo.",
+    checks: ["Repeated eighths", "Spinning Wheel tune"],
+    exercises: [
+      { id: "11.1", mp3: "audio/ex11_1.mp3", title: "Exercise 11.1 · Repeated Eighths", desc: "Four small bows per note in middle of bow.", mode: "arco", notes: [n("A4","A",0,0.5,"∏"), n("A4","A",0,0.5,"V"), n("B4","A",1,0.5,"∏"), n("B4","A",1,0.5,"V"), n("C#5","A",3,2,"∏")] },
+      { id: "11.2", mp3: "audio/ex11_2.mp3", title: "Exercise 11.2 · Finger Pattern in Eighths", desc: "Fingers ready before bow moves.", mode: "arco", notes: [n("A4","A",0,0.5,"∏"), n("B4","A",1,0.5,"V"), n("C#5","A",3,0.5,"∏"), n("D5","A",4,0.5,"V"), n("A4","A",0,2,"∏")] },
+      { id: "11.3", mp3: "audio/ex11_3.mp3", title: "Exercise 11.3 · Spinning Wheel", desc: "Original tune with continuous eighths.", mode: "arco", notes: [n("A4","A",0,0.5,"∏"), n("B4","A",1,0.5,"V"), n("C#5","A",3,0.5,"∏"), n("D5","A",4,0.5,"V"), n("E5","E",0,2,"∏")] }
+    ]
+  },
+  { week: 12, phase: 1, pos: 1, title: "Review and Mini Performance", bpm: 66, sig: 4,
+    goal: "Play Twinkle, Lightly Row and Song of the Wind for family or class.",
+    hw: "Full review list daily; record a video of one piece.",
+    checks: ["Performance routine: bow, tune, set posture, play, bow", "Little March & Victory Song"],
+    exercises: [
+      { id: "12.1", mp3: "audio/ex12_1.mp3", title: "Exercise 12.1 · Warm-Up Review", desc: "All fingers on A and E strings.", mode: "arco", notes: [n("A4","A",0,1,"0"), n("B4","A",1,1,"1"), n("C#5","A",3,1,"2"), n("D5","A",4,1,"3"), n("E5","E",0,4,"0")] },
+      { id: "12.2", mp3: "audio/ex12_2.mp3", title: "Exercise 12.2 · Little March", desc: "Original performance piece.", mode: "arco", notes: [n("A4","A",0,1,"∏"), n("C#5","A",3,1,"V"), n("E5","E",0,2,"∏"), n("D5","A",4,2,"V"), n("A4","A",0,2,"∏")] },
+      { id: "12.3", mp3: "audio/ex12_3.mp3", title: "Exercise 12.3 · Victory Song", desc: "Bow at the start and end.", mode: "arco", notes: [n("A4","A",0,1,"∏"), n("D5","A",4,1,"V"), n("C#5","A",3,1,"∏"), n("E5","E",0,2,"V"), n("A4","A",0,4,"∏")] }
+    ]
+  },
+
+  // WEEKS 13–18 (PHASE 3)
+  { week: 13, phase: 2, pos: 1, title: "The D String and D Major", bpm: 72, sig: 4,
+    goal: "Fingers 1–3 on the D string; learn Go Tell Aunt Rhody.",
+    hw: "D major scale daily; new piece in chunks.",
+    checks: ["D-string ladder", "D major scale 1 octave", "Evening Song"],
+    exercises: [
+      { id: "13.1", mp3: "audio/ex13_1.mp3", title: "Exercise 13.1 · D-String Ladder", desc: "Lower elbow to D-string level.", mode: "arco", notes: [n("D4","D",0,1,"0"), n("E4","D",1,1,"1"), n("F#4","D",3,1,"2"), n("G4","D",4,1,"3"), n("D4","D",0,4,"0")] },
+      { id: "13.2", mp3: "audio/ex13_2.mp3", title: "Exercise 13.2 · D Major Scale, One Octave", desc: "Use D4 drone or tuner.", mode: "arco", notes: [n("D4","D",0,1,"0"), n("E4","D",1,1,"1"), n("F#4","D",3,1,"2"), n("G4","D",4,1,"3"), n("A4","A",0,1,"0"), n("B4","A",1,1,"1"), n("C#5","A",3,1,"2"), n("D5","A",4,2,"3")] },
+      { id: "13.3", mp3: "audio/ex13_3.mp3", title: "Exercise 13.3 · Evening Song", desc: "Original tune on D and A strings.", mode: "arco", notes: [n("D4","D",0,1,"∏"), n("F#4","D",3,1,"V"), n("G4","D",4,2,"∏"), n("A4","A",0,2,"V"), n("D4","D",0,4,"∏")] }
+    ]
+  },
+  { week: 14, phase: 2, pos: 1, title: "Dotted Rhythms and Pickup Notes", bpm: 72, sig: 3,
+    goal: "Feel a long-short dotted rhythm and use a pickup note.",
+    hw: "Dotted rhythm drill on all strings; O Come, Little Children.",
+    checks: ["Dotted half notes in 3/4", "Up-bow Waltz"],
+    exercises: [
+      { id: "14.1", mp3: "audio/ex14_1.mp3", title: "Exercise 14.1 · Dotted Half Notes", desc: "In 3/4, a dotted half note lasts all 3 beats.", mode: "arco", notes: [n("D4","D",0,3,"∏"), n("A4","A",0,3,"V"), n("D4","D",0,3,"∏")] },
+      { id: "14.2", mp3: "audio/ex14_2.mp3", title: "Exercise 14.2 · Long-Short", desc: "Dotted quarter and eighth.", mode: "arco", notes: [n("A4","A",0,1.5,"∏"), n("B4","A",1,0.5,"V"), n("C#5","A",3,1,"∏"), n("A4","A",0,3,"V")] },
+      { id: "14.3", mp3: "audio/ex14_3.mp3", title: "Exercise 14.3 · Up-Bow Waltz", desc: "Start pickup note with an up-bow (V).", mode: "arco", notes: [n("A4","A",0,1,"V"), n("D5","A",4,2,"∏"), n("C#5","A",3,1,"V"), n("B4","A",1,2,"∏"), n("D5","A",4,3,"V")] }
+    ]
+  },
+  { week: 15, phase: 2, pos: 1, title: "Phrasing and Dynamics (May Song)", bpm: 72, sig: 4,
+    goal: "Play in 4-bar phrases with a breath between them.",
+    hw: "May Song; scales A and D major.",
+    checks: ["Loud (forte) and soft (piano)", "Breathe between phrases", "Echo Song"],
+    exercises: [
+      { id: "15.1", mp3: "audio/ex15_1.mp3", title: "Exercise 15.1 · Loud and Soft", desc: "f = forte, p = piano. Change bow weight.", mode: "arco", notes: [n("A4","A",0,1,"f ∏"), n("A4","A",0,1,"f V"), n("A4","A",0,1,"p ∏"), n("A4","A",0,1,"p V")] },
+      { id: "15.2", mp3: "audio/ex15_2.mp3", title: "Exercise 15.2 · Breathe Between Phrases", desc: "Lift bow on each rest and reset.", mode: "arco", notes: [n("A4","A",0,1,"∏"), n("B4","A",1,1,"V"), n("C#5","A",3,1,"∏"), n("REST","-",-1,1,"Lift")] },
+      { id: "15.3", mp3: "audio/ex15_3.mp3", title: "Exercise 15.3 · Echo Song", desc: "Play each echo softly.", mode: "arco", notes: [n("A4","A",0,1,"f ∏"), n("C#5","A",3,1,"f V"), n("A4","A",0,1,"p ∏"), n("C#5","A",3,1,"p V"), n("A4","A",0,4,"∏")] }
+    ]
+  },
+  { week: 16, phase: 2, pos: 1, title: "Slurs (Long, Long Ago)", bpm: 72, sig: 4,
+    goal: "Slur 2 notes in one bow evenly.",
+    hw: "Slur drills 5 minutes; Long, Long Ago.",
+    checks: ["Open-string slurs", "Finger slurs", "Gentle Breeze"],
+    exercises: [
+      { id: "16.1", mp3: "audio/ex16_1.mp3", title: "Exercise 16.1 · Open-String Slurs", desc: "Two strings in one bow.", mode: "arco", notes: [n("A4","A",0,2,"∏ Slur"), n("E5","E",0,2,"∏"), n("A4","A",0,4,"V")] },
+      { id: "16.2", mp3: "audio/ex16_2.mp3", title: "Exercise 16.2 · Finger Slurs", desc: "Only the finger changes; bow keeps going.", mode: "arco", notes: [n("A4","A",0,1,"∏ Slur"), n("B4","A",1,1,"∏"), n("C#5","A",3,1,"V Slur"), n("D5","A",4,1,"V")] },
+      { id: "16.3", mp3: "audio/ex16_3.mp3", title: "Exercise 16.3 · Gentle Breeze", desc: "Original tune in slurred pairs.", mode: "arco", notes: [n("A4","A",0,1,"∏ Slur"), n("C#5","A",3,1,"∏"), n("B4","A",1,1,"V Slur"), n("D5","A",4,1,"V"), n("A4","A",0,4,"∏")] }
+    ]
+  },
+  { week: 17, phase: 2, pos: 1, title: "Stopped Bows and Tempo (Allegro)", bpm: 72, sig: 4,
+    goal: "Clean stopped (staccato-style) bows and clear tempo changes.",
+    hw: "Stopped-bow drill; Allegro.",
+    checks: ["Pinch and release stopped bows", "Tempo ladder 60, 72, 84", "Hopping Along"],
+    exercises: [
+      { id: "17.1", mp3: "audio/ex17_1.mp3", title: "Exercise 17.1 · Stopped Bows", desc: "Bite into string, play, stop.", mode: "arco", notes: [n("A4","A",0,1,"∏ ."), n("B4","A",1,1,"V ."), n("C#5","A",3,1,"∏ ."), n("D5","A",4,1,"V .")] },
+      { id: "17.2", mp3: "audio/ex17_2.mp3", title: "Exercise 17.2 · Tempo Ladder", desc: "Step up tempo cleanly.", mode: "arco", notes: [n("A4","A",0,1,"∏"), n("B4","A",1,1,"V"), n("C#5","A",3,1,"∏"), n("A4","A",0,1,"V")] },
+      { id: "17.3", mp3: "audio/ex17_3.mp3", title: "Exercise 17.3 · Hopping Along", desc: "Crisp staccato study.", mode: "arco", notes: [n("E5","E",0,1,"∏ ."), n("D5","A",4,1,"V ."), n("C#5","A",3,1,"∏ ."), n("A4","A",0,2,"V")] }
+    ]
+  },
+  { week: 18, phase: 2, pos: 1, title: "Perpetual Motion and Allegretto", bpm: 72, sig: 4,
+    goal: "Even, continuous eighth notes and steady string crossings.",
+    hw: "Perpetual Motion daily with metronome; Allegretto chunks.",
+    checks: ["A major scale in eighths", "A–E crossing eighths", "Little Engine"],
+    exercises: [
+      { id: "18.1", mp3: "audio/ex18_1.mp3", title: "Exercise 18.1 · A Major Scale in Eighths", desc: "Repeated eighths on each scale note.", mode: "arco", notes: [n("A4","A",0,0.5,"∏"), n("A4","A",0,0.5,"V"), n("B4","A",1,0.5,"∏"), n("B4","A",1,0.5,"V"), n("C#5","A",3,1,"∏")] },
+      { id: "18.2", mp3: "audio/ex18_2.mp3", title: "Exercise 18.2 · A–E Crossing Eighths", desc: "Fast eighths at middle of bow.", mode: "arco", notes: [n("A4","A",0,0.5,"∏"), n("E5","E",0,0.5,"V"), n("A4","A",0,0.5,"∏"), n("E5","E",0,0.5,"V")] },
+      { id: "18.3", mp3: "audio/ex18_3.mp3", title: "Exercise 18.3 · Little Engine", desc: "Continuous eighth-note study.", mode: "arco", notes: [n("A4","A",0,0.5,"∏"), n("B4","A",1,0.5,"V"), n("C#5","A",3,0.5,"∏"), n("D5","A",4,0.5,"V"), n("E5","E",0,2,"∏")] }
+    ]
+  },
+
+  // WEEKS 19–24 (PHASE 4)
+  { week: 19, phase: 3, pos: 1, title: "Dynamics and Andantino", bpm: 72, sig: 4,
+    goal: "Clear piano and forte using bow weight, speed and contact point.",
+    hw: "Dynamics drill; Andantino.",
+    checks: ["Contact point slides", "Getting louder and softer", "Quiet Garden"],
+    exercises: [
+      { id: "19.1", mp3: "audio/ex19_1.mp3", title: "Exercise 19.1 · Contact Point", desc: "Near bridge (loud) vs near fingerboard (soft).", mode: "arco", notes: [n("D4","D",0,2,"f Bridge"), n("E4","D",1,2,"f"), n("F#4","D",3,2,"p Fingerbd"), n("D4","D",0,2,"p")] },
+      { id: "19.2", mp3: "audio/ex19_2.mp3", title: "Exercise 19.2 · Getting Louder and Softer", desc: "Crescendo and diminuendo.", mode: "arco", notes: [n("A4","A",0,2,"p <"), n("B4","A",1,2,"f >"), n("A4","A",0,4,"p")] },
+      { id: "19.3", mp3: "audio/ex19_3.mp3", title: "Exercise 19.3 · Quiet Garden", desc: "Expressive dynamic study.", mode: "arco", notes: [n("D4","D",0,1,"p"), n("F#4","D",3,1,"p"), n("A4","A",0,2,"f"), n("D4","D",0,4,"p")] }
+    ]
+  },
+  { week: 20, phase: 3, pos: 1, title: "The G String and Etude", bpm: 72, sig: 4,
+    goal: "Fingers 1–3 on the G string; G major scale, one octave.",
+    hw: "G major scale; Etude chunks.",
+    checks: ["G-string ladder", "G major scale 1 octave", "Crossing chain"],
+    exercises: [
+      { id: "20.1", mp3: "audio/ex20_1.mp3", title: "Exercise 20.1 · G-String Ladder", desc: "G–A–B–C and back.", mode: "arco", notes: [n("G3","G",0,1,"0"), n("A3","G",1,1,"1"), n("B3","G",3,1,"H2"), n("C4","G",4,1,"3"), n("G3","G",0,4,"0")] },
+      { id: "20.2", mp3: "audio/ex20_2.mp3", title: "Exercise 20.2 · G Major Scale, One Octave", desc: "Slow with G3 tuner/drone.", mode: "arco", notes: [n("G3","G",0,1,"0"), n("A3","G",1,1,"1"), n("B3","G",3,1,"H2"), n("C4","G",4,1,"3"), n("D4","D",0,1,"0"), n("E4","D",1,1,"1"), n("F#4","D",3,1,"H2"), n("G4","D",4,2,"3")] },
+      { id: "20.3", mp3: "audio/ex20_3.mp3", title: "Exercise 20.3 · Crossing Chain", desc: "G–D–A strings in steady pattern.", mode: "arco", notes: [n("G3","G",0,1,"∏"), n("D4","D",0,1,"V"), n("A4","A",0,1,"∏"), n("D4","D",0,1,"V"), n("G3","G",0,4,"∏")] }
+    ]
+  },
+  { week: 21, phase: 3, pos: 1, title: "Low Second Finger and Minuet 1", bpm: 72, sig: 3,
+    goal: "Place finger 2 next to finger 1 (Low 2) as well as High 2.",
+    hw: "High/low finger drill; Minuet 1.",
+    checks: ["High and low 2 switch", "C major scale 1 octave", "Garden Waltz"],
+    exercises: [
+      { id: "21.1", mp3: "audio/ex21_1.mp3", title: "Exercise 21.1 · High and Low 2", desc: "B–C# (High 2) vs B–C natural (Low 2).", mode: "arco", notes: [n("A4","A",0,1,"0"), n("B4","A",1,1,"1"), n("C#5","A",3,1,"H2"), n("C5","A",2,2,"L2"), n("A4","A",0,1,"0")] },
+      { id: "21.2", mp3: "audio/ex21_2.mp3", title: "Exercise 21.2 · C Major Scale, One Octave", desc: "Starting on G string's C4.", mode: "arco", notes: [n("C4","G",4,1,"3"), n("D4","D",0,1,"0"), n("E4","D",1,1,"1"), n("F4","D",2,1,"L2"), n("G4","D",4,1,"3"), n("A4","A",0,1,"0"), n("B4","A",1,1,"1"), n("C5","A",2,2,"L2")] },
+      { id: "21.3", mp3: "audio/ex21_3.mp3", title: "Exercise 21.3 · Garden Waltz", desc: "3/4 waltz using Low 2.", mode: "arco", notes: [n("C5","A",2,2,"L2"), n("B4","A",1,1,"1"), n("A4","A",0,2,"0"), n("G4","D",4,1,"3"), n("C5","A",2,3,"L2")] }
+    ]
+  },
+  { week: 22, phase: 3, pos: 1, title: "Bow Distribution and Minuet 2", bpm: 72, sig: 3,
+    goal: "Plan where in the bow each note goes so slurs and long notes fit.",
+    hw: "Bow map practice; Minuets 1 and 2.",
+    checks: ["Slur two, play one", "Plan the bow", "Swaying Tune"],
+    exercises: [
+      { id: "22.1", mp3: "audio/ex22_1.mp3", title: "Exercise 22.1 · Slur Two, Play One", desc: "2 slurred notes then 1 separate note.", mode: "arco", notes: [n("D5","A",4,1,"∏ Slur"), n("B4","A",1,1,"∏"), n("G4","D",4,1,"V"), n("D5","A",4,3,"∏")] },
+      { id: "22.2", mp3: "audio/ex22_2.mp3", title: "Exercise 22.2 · Plan the Bow", desc: "Bow distribution study.", mode: "arco", notes: [n("G4","D",4,2,"∏"), n("A4","A",0,1,"V"), n("B4","A",1,3,"∏")] },
+      { id: "22.3", mp3: "audio/ex22_3.mp3", title: "Exercise 22.3 · Swaying Tune", desc: "3/4 bow division piece.", mode: "arco", notes: [n("B4","A",1,2,"∏"), n("C5","A",2,1,"V"), n("D5","A",4,2,"∏"), n("G4","D",4,1,"V")] }
+    ]
+  },
+  { week: 23, phase: 3, pos: 1, title: "Accents, G-String Tone & Minuet 3", bpm: 72, sig: 4,
+    goal: "Longer pieces with accents and strong G-string tone.",
+    hw: "Accents and tone drill; Minuet 3 & Happy Farmer.",
+    checks: ["Accent bite", "G-string tone", "Harvest Dance"],
+    exercises: [
+      { id: "23.1", mp3: "audio/ex23_1.mp3", title: "Exercise 23.1 · Accent Bite", desc: "Quick bite at start of accented note.", mode: "arco", notes: [n("G3","G",0,1,"∏ >"), n("A3","G",1,1,"V >"), n("B3","G",3,1,"∏ >"), n("C4","G",4,1,"V >")] },
+      { id: "23.2", mp3: "audio/ex23_2.mp3", title: "Exercise 23.2 · G-String Tone", desc: "Slow full bows for rich sound.", mode: "arco", notes: [n("G3","G",0,2,"∏"), n("B3","G",3,2,"V"), n("D4","D",0,4,"∏")] },
+      { id: "23.3", mp3: "audio/ex23_3.mp3", title: "Exercise 23.3 · Harvest Dance", desc: "Spirited piece with accents.", mode: "arco", notes: [n("D4","D",0,1,"V"), n("G4","D",4,2,"∏ >"), n("B4","A",1,1,"V"), n("G4","D",4,4,"∏")] }
+    ]
+  },
+  { week: 24, phase: 3, pos: 1, title: "Gavotte and Book 1 Recital", bpm: 72, sig: 4,
+    goal: "Start Gossec Gavotte and perform one minuet in a short recital.",
+    hw: "Gavotte chunks; recital piece daily.",
+    checks: ["Light staccato", "G major scale in eighths", "Graduation Minuet"],
+    exercises: [
+      { id: "24.1", mp3: "audio/ex24_1.mp3", title: "Exercise 24.1 · Light Staccato", desc: "Middle of the bow for Gavotte.", mode: "arco", notes: [n("F#5","E",1,1,"∏ ."), n("G5","E",2,1,"V ."), n("F#5","E",1,1,"∏ ."), n("E5","E",0,1,"V .")] },
+      { id: "24.2", mp3: "audio/ex24_2.mp3", title: "Exercise 24.2 · G Major Scale in Eighths", desc: "Crisp eighth-note scale.", mode: "arco", notes: [n("G3","G",0,0.5,"∏"), n("A3","G",1,0.5,"V"), n("B3","G",3,0.5,"∏"), n("C4","G",4,0.5,"V"), n("D4","D",0,2,"∏")] },
+      { id: "24.3", mp3: "audio/ex24_3.mp3", title: "Exercise 24.3 · Graduation Minuet", desc: "Book 1 Finale Piece.", mode: "arco", notes: [n("D5","A",4,1,"∏"), n("G4","D",4,1,"V"), n("A4","A",0,1,"∏"), n("B4","A",1,3,"V")] }
+    ]
+  },
+
+  // --- BOOK 2: WEEKS 25–48 (POSITIONS, SHIFTING, VIBRATO, SCALES & DOUBLE STOPS) ---
+  { week: 25, phase: 4, pos: 3, title: "Book 2 (W25–26): Finding 3rd Position", bpm: 72, sig: 4,
+    goal: "In 3rd position your 1st finger plays C on G, G on D, D on A, and A on E. Base of palm lightly touches violin body.",
+    hw: "Exercise 1 every day checking D against open D; Exercise 2 one string at a time.",
+    checks: ["Exercise 1 · Finding 3rd position (check D against open D)", "Exercise 2 · 3rd position on every string (fingers 1–4, no open strings)"],
+    exercises: [
+      { id: "B2.1", mp3: "audio2/b2_find3.mp3", title: "Book 2 Ex 1 · Finding 3rd Position", desc: "Play D5 with 3rd finger in 1st pos, then slide hand up so 1st finger plays the same D5 in 3rd pos.", mode: "arco", notes: [n("D5","A",4,2,"1st: 3"), n("D5","A",1,2,"3rd: 1"), n("D5","A",1,1,"1"), n("E5","A",2,1,"2"), n("F#5","A",3,1,"3"), n("G5","A",4,1,"4"), n("G5","A",4,1,"4"), n("F#5","A",3,1,"3"), n("E5","A",2,1,"2"), n("D5","A",1,1,"1"), n("D5","A",1,4,"1")] },
+      { id: "B2.2", mp3: "audio2/b2_pos3_strings.mp3", title: "Book 2 Ex 2 · 3rd Position on Every String", desc: "Fingers 1, 2, 3, 4 and back on each string, all in 3rd position.", mode: "arco", notes: [n("C4","G",1,1,"1"), n("D4","G",2,1,"2"), n("E4","G",3,1,"3"), n("F4","G",4,1,"4"), n("G4","D",1,1,"1"), n("A4","D",2,1,"2"), n("B4","D",3,1,"3"), n("C5","D",4,1,"4"), n("D5","A",1,1,"1"), n("E5","A",2,1,"2"), n("F5","A",3,1,"3"), n("G5","A",4,1,"4")] }
+    ]
+  },
+  { week: 27, phase: 4, pos: 3, title: "Book 2 (W27–28): Reading in 3rd Position", bpm: 72, sig: 4,
+    goal: "Play Up the Stairs; C major, D major, and D minor scales entirely in 3rd position.",
+    hw: "Up the Stairs slowly with play-along; C, D, and D minor scales in 3rd position.",
+    checks: ["Exercise 3 · Up the Stairs (D and A strings in 3rd pos)", "C major & D major two-octave scales in 3rd position", "D minor scale in 3rd position"],
+    exercises: [
+      { id: "B2.3", mp3: "audio2/b2_up_the_stairs.mp3", title: "Book 2 Ex 3 · Up the Stairs", desc: "Original study, all in 3rd position on the D and A strings.", mode: "arco", notes: [n("B4","D",3,1,"3"), n("C5","D",4,1,"4"), n("D5","A",1,1,"1"), n("E5","A",2,1,"2"), n("D5","A",1,2,"1"), n("B4","D",3,2,"3"), n("C5","D",4,1,"4"), n("B4","D",3,1,"3"), n("A4","D",2,1,"2"), n("G4","D",1,1,"1"), n("A4","D",2,4,"2")] },
+      { id: "SC.C", mp3: "audio2/sc_major_C_scale.mp3", title: "C Major Scale (Two Octaves in 3rd Position)", desc: "No sharps or flats — played entirely in 3rd position.", mode: "arco", notes: [n("C4","G",1,1,"1"), n("D4","G",2,1,"2"), n("E4","G",3,1,"3"), n("F4","G",4,1,"4"), n("G4","D",1,1,"1"), n("A4","D",2,1,"2"), n("B4","D",3,1,"3"), n("C5","D",4,1,"4"), n("D5","A",1,1,"1"), n("E5","A",2,1,"2"), n("F5","A",3,1,"3"), n("G5","A",4,1,"4"), n("A5","E",1,1,"1"), n("B5","E",2,1,"2"), n("C6","E",3,2,"3")] }
+    ]
+  },
+  { week: 29, phase: 4, pos: 3, title: "Book 2 (W29–30): Shifting 1st & 3rd + Ode to Joy", bpm: 72, sig: 4,
+    goal: "Prepare, Move, Arrive, Bow: glide whole hand and thumb together between 1st and 3rd position.",
+    hw: "Shifting Exercise 1 at half speed; Ode to Joy in 3rd position.",
+    checks: ["Shifting Exercise 1 · 1st and 3rd positions", "Ode to Joy in 3rd position (A and E strings)"],
+    exercises: [
+      { id: "SH.1", mp3: "audio2/b2_shift_1_3.mp3", title: "Shifting Ex 1 · 1st and 3rd Positions", desc: "Each pair is the same finger in two positions. Listen for the arrival note.", mode: "arco", notes: [n("B4","A",1,2,"1st: 1"), n("D5","A",1,2,"3rd: 1"), n("C#5","A",2,2,"1st: 2"), n("E5","A",2,2,"3rd: 2"), n("D5","A",3,2,"1st: 3"), n("F#5","A",3,2,"3rd: 3")] },
+      { id: "ODE.3", mp3: "audio2/b2_ode_3rd.mp3", title: "Ode to Joy (in 3rd Position)", desc: "Beethoven, arranged an octave higher than Book 1. 3rd position throughout.", mode: "arco", notes: [n("F#5","A",3,1,"3"), n("F#5","A",3,1,"3"), n("G5","A",4,1,"4"), n("A5","E",1,1,"1"), n("A5","E",1,1,"1"), n("G5","A",4,1,"4"), n("F#5","A",3,1,"3"), n("E5","A",2,1,"2"), n("D5","A",1,1,"1"), n("D5","A",1,1,"1"), n("E5","A",2,1,"2"), n("F#5","A",3,1,"3"), n("F#5","A",3,1.5,"3"), n("E5","A",2,0.5,"2"), n("E5","A",2,2,"2")] }
+    ]
+  },
+  { week: 31, phase: 4, pos: 1, title: "Book 2 (W31–32): Two-Octave Scales in 1st Position", bpm: 80, sig: 4,
+    goal: "Play G, A, B♭, A♭, and B major + G, A, B, and B♭ minor two-octave scales in 1st position.",
+    hw: "Daily routine: 1 major scale, its relative minor (harmonic & melodic), and both arpeggios.",
+    checks: ["G, A, B♭, A♭ & B major scales (1st pos)", "G, A, B & B♭ minor scales (1st pos)"],
+    exercises: [
+      { id: "SC.G", mp3: "audio2/sc_major_G_scale.mp3", title: "G Major Scale (Two Octaves, 1st Pos)", desc: "1 sharp: F♯. Relative minor: E minor.", mode: "arco", notes: [n("G3","G",0,1,"0"), n("A3","G",1,1,"1"), n("B3","G",3,1,"2"), n("C4","G",4,1,"3"), n("D4","D",0,1,"0"), n("E4","D",1,1,"1"), n("F#4","D",3,1,"2"), n("G4","D",4,1,"3"), n("A4","A",0,1,"0"), n("B4","A",1,1,"1"), n("C5","A",2,1,"2"), n("D5","A",4,1,"3"), n("E5","E",0,1,"0"), n("F#5","E",1,1,"1"), n("G5","E",2,2,"2")] },
+      { id: "SC.A", mp3: "audio2/
